@@ -9,7 +9,7 @@
 import UIKit
 import UserNotifications
 
-private let pendingMessageProcessingQueue = DispatchQueue(label: "me.fin.bark.pending-message-processing", qos: .userInitiated)
+private let pendingMessageProcessingQueue = DispatchQueue(label: "com.austinarnold.bark.pending-message-processing", qos: .userInitiated)
 let kBarkMessagesDidChangeNotification = Notification.Name("com.bark.messagesDidChange")
 
 extension AppDelegate {
@@ -34,7 +34,7 @@ extension AppDelegate {
         }
         
         let fileManager = FileManager.default
-        guard let oldGroupUrl = fileManager.containerURL(forSecurityApplicationGroupIdentifier: "group.bark"),
+        guard let oldGroupUrl = fileManager.containerURL(forSecurityApplicationGroupIdentifier: "group.com.austinarnold.bark"),
               let newDocUrl = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
         else {
             return
@@ -84,7 +84,7 @@ extension AppDelegate {
             pendingMessageProcessingQueue.async {
                 defer { continuation.resume() }
 
-                guard let groupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.bark") else {
+                guard let groupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.austinarnold.bark") else {
                     return
                 }
 

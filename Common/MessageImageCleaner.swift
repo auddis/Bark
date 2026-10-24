@@ -18,11 +18,11 @@ import RealmSwift
 class MessageImageCleaner: @unchecked Sendable {
     static let shared = MessageImageCleaner()
 
-    private let cleanQueue = DispatchQueue(label: "me.fin.bark.message-image-clean", qos: .utility)
+    private let cleanQueue = DispatchQueue(label: "com.austinarnold.bark.message-image-clean", qos: .utility)
 
     /// 与 ImageDownloader 使用同一个图片缓存
     private lazy var imageCache: ImageCache? = {
-        guard let groupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.bark") else {
+        guard let groupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.austinarnold.bark") else {
             return nil
         }
         return try? ImageCache(name: "shared", cacheDirectoryURL: groupUrl)

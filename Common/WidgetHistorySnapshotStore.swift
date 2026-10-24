@@ -14,7 +14,7 @@ import WidgetKit
 final class WidgetHistorySnapshotStore {
     static let shared = WidgetHistorySnapshotStore()
 
-    private let accessQueue = DispatchQueue(label: "me.fin.bark.widget-history-snapshot", qos: .utility)
+    private let accessQueue = DispatchQueue(label: "com.austinarnold.bark.widget-history-snapshot", qos: .utility)
 
     private let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
