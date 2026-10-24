@@ -186,6 +186,7 @@ class SoundFileStorage: SoundFileStorageProtocol {
             return
         }
         let soundUrl = soundsDirectoryUrl.appendingPathComponent(url.lastPathComponent)
+        try? fileManager.removeItem(at: soundUrl)
         try? fileManager.copyItem(at: url, to: soundUrl)
     }
 

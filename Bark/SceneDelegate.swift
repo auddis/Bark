@@ -65,6 +65,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         if handleWidgetDeepLink(url) {
             return true
         }
+        if handleLiveActivityDeepLink(url) {
+            return true
+        }
 
         if url.scheme?.lowercased() == "bark" && url.host?.lowercased() == "addserver" {
             // 提取参数
@@ -91,5 +94,54 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         Client.shared.currentTabPage = .messageHistory
         return true
+    }
+
+    private func handleLiveActivityDeepLink(_ url: URL) -> Bool {
+        guard url.scheme?.lowercased() == "bark", url.host?.lowercased() == "liveactivity" else {
+            return false
+        }
+        
+        #if canImport(ActivityKit)
+        if #available(iOS 16.2, *) {
+            let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
+            let action = queryItems?.first(where: { $0.name == "action" })?.value?.lowercased() ?? "start"
+            let id = queryItems?.first(where: { $0.name == "id" })?.value ?? UUID().uuidString
+            let title = queryItems?.first(where: { $0.name == "title" })?.value ?? "Bark"
+            let message = queryItems?.first(where: { $0.name == "message" })?.value
+            let progressStr = queryItems?.first(where: { $0.name == "progress" })?.value
+            let progress = progressStr.flatMap { Double($0) }
+            let status = queryItems?.first(where: { $0.name == "status" })?.value
+            let icon = queryItems?.first(where: { $0.name == "icon" })?.value
+            
+            switch action {
+            case "start":
+                _ = BarkLiveActivityManager.shared.startLiveActivity(
+                    id: id,
+                    title: title,
+                    message: message,
+                    progress: progress,
+                    status: status,
+                    iconName: icon
+                )
+                HUDSuccess("Live Activity Started")
+            case "update":
+                BarkLiveActivityManager.shared.updateLiveActivity(
+                    id: id,
+                    title: title,
+                    message: message,
+                    progress: progress,
+                    status: status,
+                    iconName: icon
+                )
+            case "end", "stop":
+                BarkLiveActivityManager.shared.endLiveActivity(id: id)
+                HUDSuccess("Live Activity Ended")
+            default:
+                break
+            }
+            return true
+        }
+        #endif
+        return false
     }
 }

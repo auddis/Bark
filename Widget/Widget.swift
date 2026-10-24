@@ -255,3 +255,119 @@ struct RecentMessagesWidget: Widget {
 } timeline: {
     SimpleEntry(date: .now, snapshot: .placeholder, selectedGroup: nil)
 }
+
+#if canImport(ActivityKit)
+import ActivityKit
+
+@available(iOS 16.1, *)
+struct BarkLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: BarkActivityAttributes.self) { context in
+            BarkLiveActivityBannerView(context: context)
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    HStack(spacing: 6) {
+                        Image(systemName: context.state.iconName ?? "bell.fill")
+                            .foregroundColor(.blue)
+                        Text(context.state.title)
+                            .font(.headline)
+                            .lineLimit(1)
+                    }
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    if let status = context.state.status {
+                        Text(status)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.2))
+                            .clipShape(Capsule())
+                    }
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let message = context.state.message, !message.isEmpty {
+                            Text(message)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                        if let progress = context.state.progress {
+                            ProgressView(value: min(max(progress, 0.0), 1.0))
+                                .tint(.blue)
+                        }
+                    }
+                    .padding(.top, 2)
+                }
+            } compactLeading: {
+                Image(systemName: context.state.iconName ?? "bell.fill")
+                    .foregroundColor(.blue)
+            } compactTrailing: {
+                if let progress = context.state.progress {
+                    Text("\(Int(progress * 100))%")
+                        .font(.caption2)
+                        .bold()
+                } else if let status = context.state.status {
+                    Text(status)
+                        .font(.caption2)
+                        .lineLimit(1)
+                } else {
+                    Text(context.state.title)
+                        .font(.caption2)
+                        .lineLimit(1)
+                }
+            } minimal: {
+                Image(systemName: context.state.iconName ?? "bell.fill")
+                    .foregroundColor(.blue)
+            }
+            .widgetURL(URL(string: "bark://history"))
+        }
+    }
+}
+
+@available(iOS 16.1, *)
+struct BarkLiveActivityBannerView: View {
+    let context: ActivityViewContext<BarkActivityAttributes>
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: context.state.iconName ?? "bell.fill")
+                .font(.title2)
+                .foregroundColor(.blue)
+                .frame(width: 38, height: 38)
+                .background(Color.blue.opacity(0.15))
+                .clipShape(Circle())
+            
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(context.state.title)
+                        .font(.headline)
+                    Spacer()
+                    if let status = context.state.status {
+                        Text(status)
+                            .font(.caption)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                }
+                if let message = context.state.message, !message.isEmpty {
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                }
+                if let progress = context.state.progress {
+                    ProgressView(value: min(max(progress, 0.0), 1.0))
+                        .tint(.blue)
+                        .padding(.top, 2)
+                }
+            }
+        }
+        .padding(14)
+        .widgetURL(URL(string: "bark://history"))
+    }
+}
+#endif

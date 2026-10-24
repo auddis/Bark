@@ -8,7 +8,9 @@
 
 import AVKit
 import Material
+import SVProgressHUD
 import UIKit
+import UniformTypeIdentifiers
 
 import NSObject_Rx
 import RxCocoa
@@ -199,13 +201,12 @@ extension SoundsViewController: UITableViewDelegate {
 }
 
 extension SoundsViewController: UIDocumentPickerDelegate {
-    /// 选择 caf 文件
+    /// 选择音频文件或文件夹进行导入
     func pickerSoundFile() {
         if #available(iOS 14.0, *) {
-            /// 直接修改文件扩展为 .audio iOS 支持的音频格式
-            let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.audio])
+            let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.audio, .folder], asCopy: false)
             documentPicker.delegate = self
-            documentPicker.allowsMultipleSelection = false
+            documentPicker.allowsMultipleSelection = true
             documentPicker.modalPresentationStyle = .pageSheet
             self.present(documentPicker, animated: true, completion: nil)
         } else {
@@ -213,30 +214,87 @@ extension SoundsViewController: UIDocumentPickerDelegate {
         }
     }
     
-    // 文件选择完成回调
+    // 文件或文件夹选择完成回调
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        guard let url = urls.first else { return }
-        let canAccessingResource = url.startAccessingSecurityScopedResource()
-        guard canAccessingResource else { return }
+        guard !urls.isEmpty else { return }
         
-        let fileCoordinator = NSFileCoordinator()
-        let err = NSErrorPointer(nilLiteral: ())
-        fileCoordinator.coordinate(readingItemAt: url, error: err) { url in
-            // 检查文件扩展名是否为 caf
-            if url.pathExtension.lowercased() == "caf" {
-                // 如果是 caf 文件，直接导入
-                self.importSoundActionRelay.accept(url)
-            } else {
-                // 如果不是 caf 文件，先转换为 caf 格式
-                convertAudioToCAF(inputURL: url) { url in
-                    if let url {
-                        // 转换成功后导入
-                        self.importSoundActionRelay.accept(url)
+        let supportedExtensions = Set(["caf", "wav", "m4a", "mp3", "aiff", "aac", "m4r"])
+        var soundUrlsToImport: [URL] = []
+        
+        for rootUrl in urls {
+            let canAccess = rootUrl.startAccessingSecurityScopedResource()
+            defer {
+                if canAccess {
+                    rootUrl.stopAccessingSecurityScopedResource()
+                }
+            }
+            
+            var isDirectory: ObjCBool = false
+            if FileManager.default.fileExists(atPath: rootUrl.path, isDirectory: &isDirectory) {
+                if isDirectory.boolValue {
+                    // 递归枚举文件夹下的所有音频文件
+                    if let enumerator = FileManager.default.enumerator(
+                        at: rootUrl,
+                        includingPropertiesForKeys: [.isRegularFileKey],
+                        options: [.skipsHiddenFiles]
+                    ) {
+                        for case let fileUrl as URL in enumerator {
+                            if supportedExtensions.contains(fileUrl.pathExtension.lowercased()) {
+                                soundUrlsToImport.append(fileUrl)
+                            }
+                        }
+                    }
+                } else {
+                    if supportedExtensions.contains(rootUrl.pathExtension.lowercased()) {
+                        soundUrlsToImport.append(rootUrl)
                     }
                 }
             }
         }
-        url.stopAccessingSecurityScopedResource()
+        
+        guard !soundUrlsToImport.isEmpty else {
+            self.showSnackbar(text: "No supported audio files found")
+            return
+        }
+        
+        SVProgressHUD.show(withStatus: "Importing \(soundUrlsToImport.count) sound\(soundUrlsToImport.count == 1 ? "" : "s")...")
+        
+        let dispatchGroup = DispatchGroup()
+        var importedCount = 0
+        
+        for audioUrl in soundUrlsToImport {
+            dispatchGroup.enter()
+            let canAccess = audioUrl.startAccessingSecurityScopedResource()
+            let fileCoordinator = NSFileCoordinator()
+            let err = NSErrorPointer(nilLiteral: ())
+            
+            fileCoordinator.coordinate(readingItemAt: audioUrl, error: err) { coordinatedUrl in
+                if coordinatedUrl.pathExtension.lowercased() == "caf" {
+                    DispatchQueue.main.async {
+                        self.importSoundActionRelay.accept(coordinatedUrl)
+                        importedCount += 1
+                        dispatchGroup.leave()
+                    }
+                } else {
+                    self.convertAudioToCAF(inputURL: coordinatedUrl) { convertedUrl in
+                        if let convertedUrl {
+                            self.importSoundActionRelay.accept(convertedUrl)
+                            importedCount += 1
+                        }
+                        dispatchGroup.leave()
+                    }
+                }
+            }
+            
+            if canAccess {
+                audioUrl.stopAccessingSecurityScopedResource()
+            }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            SVProgressHUD.showSuccess(withStatus: "Imported \(importedCount) sound\(importedCount == 1 ? "" : "s")")
+            SVProgressHUD.dismiss(withDelay: 1.5)
+        }
     }
     
     /// 将音频文件转换为 CAF 格式
@@ -245,11 +303,13 @@ extension SoundsViewController: UIDocumentPickerDelegate {
     ///   - completion: 转换完成后的回调，返回转换后的 CAF 文件 URL，如果转换失败则返回 nil
     func convertAudioToCAF(inputURL: URL, completion: @escaping (URL?) -> Void) {
         let fileName = inputURL.deletingPathExtension().lastPathComponent
-        let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(fileName).caf")
+        let tempFileName = "\(UUID().uuidString)_\(fileName).caf"
+        let tempOutputURL = FileManager.default.temporaryDirectory.appendingPathComponent(tempFileName)
+        let finalOutputURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(fileName).caf")
 
         do {
-            if FileManager.default.fileExists(atPath: outputURL.path) {
-                try FileManager.default.removeItem(at: outputURL)
+            if FileManager.default.fileExists(atPath: tempOutputURL.path) {
+                try FileManager.default.removeItem(at: tempOutputURL)
             }
 
             let asset = AVAsset(url: inputURL)
@@ -264,14 +324,20 @@ extension SoundsViewController: UIDocumentPickerDelegate {
             }
 
             exportSession.outputFileType = .caf
-            exportSession.outputURL = outputURL
+            exportSession.outputURL = tempOutputURL
 
             exportSession.exportAsynchronously {
                 DispatchQueue.main.async {
-                    completion(exportSession.status == .completed ? outputURL : nil)
+                    if exportSession.status == .completed {
+                        try? FileManager.default.removeItem(at: finalOutputURL)
+                        try? FileManager.default.moveItem(at: tempOutputURL, to: finalOutputURL)
+                        completion(finalOutputURL)
+                    } else {
+                        try? FileManager.default.removeItem(at: tempOutputURL)
+                        completion(nil)
+                    }
                 }
             }
-
         } catch {
             completion(nil)
         }

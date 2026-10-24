@@ -13,5 +13,17 @@ import SwiftUI
 struct BarkWidgetBundle: WidgetBundle {
     var body: some Widget {
         RecentMessagesWidget()
+        #if canImport(ActivityKit)
+        barkLiveActivityWidget
+        #endif
     }
+
+    #if canImport(ActivityKit)
+    @WidgetBundleBuilder
+    var barkLiveActivityWidget: some Widget {
+        if #available(iOS 16.1, *) {
+            BarkLiveActivity()
+        }
+    }
+    #endif
 }
