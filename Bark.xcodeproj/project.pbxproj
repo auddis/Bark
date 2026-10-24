@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06A200042FED000200000002 /* LiveActivityStudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A200032FED000200000002 /* LiveActivityStudioView.swift */; };
 		0603706720E1E31600F4CA05 /* Defines.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0603706620E1E31600F4CA05 /* Defines.swift */; };
 		0603706B20E20A7C00F4CA05 /* String+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0603706A20E20A7C00F4CA05 /* String+Extension.swift */; };
 		0603706D20E23EC000F4CA05 /* BarkSFSafariViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0603706C20E23EC000F4CA05 /* BarkSFSafariViewController.swift */; };
@@ -294,6 +295,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		06A200032FED000200000002 /* LiveActivityStudioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityStudioView.swift; sourceTree = "<group>"; };
 		0603706620E1E31600F4CA05 /* Defines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Defines.swift; sourceTree = "<group>"; };
 		0603706A20E20A7C00F4CA05 /* String+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Extension.swift"; sourceTree = "<group>"; };
 		0603706C20E23EC000F4CA05 /* BarkSFSafariViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarkSFSafariViewController.swift; sourceTree = "<group>"; };
@@ -582,7 +584,8 @@
 				1EFB545E2C32514000B8E51B /* SectionViewModel-iPad.swift */,
 				1EFB545C2C314A6800B8E51B /* BarkSplitViewController.swift */,
 				0689CF4B2C7484A7007203A6 /* BarkTabBarController.swift */,
-			);
+							06A200032FED000200000002 /* LiveActivityStudioView.swift */,
+);
 			path = Controller;
 			sourceTree = "<group>";
 		};
@@ -1493,6 +1496,7 @@
 				0668900F2F751A1000E106F2 /* MessageListSkeletonView.swift in Sources */,
 				1E73F99E2C282822002BF649 /* SectionViewController-iPad.swift in Sources */,
 				0689CF4C2C7484A7007203A6 /* BarkTabBarController.swift in Sources */,
+				06A200042FED000200000002 /* LiveActivityStudioView.swift in Sources */,
 				06BBB8B72567AC140076F63E /* MessageSettingsViewModel.swift in Sources */,
 				06BBB8C12567B3EF0076F63E /* BaseTableViewCell.swift in Sources */,
 				0661A543204FDA4100965E4E /* AppDelegate.swift in Sources */,
